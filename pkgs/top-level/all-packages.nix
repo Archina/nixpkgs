@@ -791,6 +791,8 @@ with pkgs;
 
   compressFirmwareZstd = callPackage ../build-support/kernel/compress-firmware.nix { type = "zstd"; };
 
+  magic-set-editor = callPackage ../applications/graphics/magic-set-editor {};
+
   makeModulesClosure =
     {
       kernel,
