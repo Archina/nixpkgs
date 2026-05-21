@@ -1,57 +1,95 @@
-{
-  stdenv,
-  fetchurl,
-  pkgs,
-  pkg-config,
-  lib,
-  # Add other dependencies here (e.g., pkg-config, libxml2, etc.)
+{ lib
+, stdenv
+, fetchFromGitHub
+, cmake
+, boost
+, hunspell
+, pkg-config
+, gtk3
+, libGL
+, libGLU
+, curl
 }:
 
-stdenv.mkDerivation rec {
-  pname = "MagicSetEditor2";
-  version = "2.5.6";
+let
+  wxGTK33-cmake = stdenv.mkDerivation rec {
+    pname = "wxwidgets";
+    version = "3.3.1";
 
-  src = fetchurl {
-    url = "https://github.com/haganbmj/${pname}/archive/refs/tags/v${version}.tar.gz";
-    sha256 = "sha256-0ipcXWKebn50TGqPWWROwnWgOXwMzaPppIgULKzJSyk=";
+    src = fetchFromGitHub {
+      owner = "wxWidgets";
+      repo = "wxWidgets";
+      rev = "v${version}";
+      fetchSubmodules = true;
+      hash = "sha256-eYmZrh9lvDnJ3VAS+TllT21emtKBPAOhqIULw1dTPhk=";
+    };
+
+    nativeBuildInputs = [ cmake pkg-config ];
+    buildInputs = [ gtk3 libGL libGLU curl ];
+
+    cmakeFlags = [
+      "-DwxBUILD_PRECOMP=ON"
+      "-DwxBUILD_USE_STATIC_RUNTIME=OFF"
+    ];
+
+    postInstall = ''
+      cat > $out/bin/wx-config << 'EOF'
+      #!/bin/sh
+      exec $out/lib/wx/config/gtk3-unicode-3.3 "$@"
+      EOF
+      chmod +x $out/bin/wx-config
+    '';
+
+    enableParallelBuilding = true;
+  };
+in
+
+stdenv.mkDerivation {
+  pname = "magicseteditor";
+  version = "2.6.0";
+
+  src = fetchFromGitHub {
+    owner = "G-e-n-e-v-e-n-s-i-S";
+    repo = "MagicSetEditor2";
+    rev = "main";
+    hash = "sha256-WgLsU2WCV6n/bd/HZub4uB2+n0nixOBLzQWbMHL/kAM=";
   };
 
-  # Build inputs needed at compile time
-  nativeBuildInputs = with pkgs; [
-    gcc
+  nativeBuildInputs = [
     cmake
-    # wxwidgets_3_1
-    boost.dev
-    hunspell.dev
     pkg-config
-    # pkg-config, cmake, etc. go here
-    wrapGAppsHook3
   ];
 
-  # Runtime dependencies
-  buildInputs = with pkgs; [
-    wxwidgets_3_1
-    boost.out
-    hunspell.out
-    # Libraries your program links against
-    gsettings-desktop-schemas
+  buildInputs = [
+    wxGTK33-cmake
+    boost
+    hunspell
+    libGL
+    libGLU
+    curl
+    gtk3
   ];
 
-  # If using Autotools/Makefile, stdenv handles this automatically
-  # For custom build systems, override configurePhase, buildPhase, installPhase
-  installPhase = ''
-    mkdir -p $out/bin
-    cp magicseteditor $out/bin
-    cp -r $NIX_BUILD_TOP/$sourceRoot/resource $out/bin
-    cp -r $NIX_BUILD_TOP/$sourceRoot/data $out/bin
+  preConfigure = ''
+    export CMAKE_PREFIX_PATH=${wxGTK33-cmake}''${CMAKE_PREFIX_PATH:+:}$CMAKE_PREFIX_PATH
+    export wxWidgets_ROOT_DIR=${wxGTK33-cmake}
+    export wxWidgets_CONFIG_EXECUTABLE=${wxGTK33-cmake}/bin/wx-config
   '';
-  # mkdir -p $out/share/magicseteditor
 
-  meta = {
-    description = "Magic Set Editor is a card design engine";
-    homepage = "https://github.com/haganbmj/MagicSetEditor2";
-    license = lib.licenses.gpl2Only; # or gpl3, bsd3, etc.
-    maintainers = [ lib.maintainers.yourgithub ];
-    platforms = lib.platforms.unix; # or lib.platforms.linux
+  installPhase = ''
+    runHook preInstall
+    mkdir -p $out/bin
+    cp magicseteditor $out/bin/
+    mkdir -p $out/share/mse
+    cp -r ../resource $out/share/mse/
+    runHook postInstall
+  '';
+
+  meta = with lib; {
+    description = "Magic Set Editor is a card design engine.";
+    homepage = "https://github.com/G-e-n-e-v-e-n-s-i-S/MagicSetEditor2";
+    license = licenses.gpl2Only;
+    platforms = platforms.linux;
+    maintainers = with maintainers; [ ];
   };
 }
