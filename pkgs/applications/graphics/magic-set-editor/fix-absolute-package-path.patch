@@ -1,22 +1,29 @@
 diff --git a/src/util/io/package_manager.cpp b/src/util/io/package_manager.cpp
-index 66f3da2..3e5b2ac 100644
+index 66f3da2..f2ecb6f 100644
 --- a/src/util/io/package_manager.cpp
 +++ b/src/util/io/package_manager.cpp
-@@ -71,8 +71,15 @@
- }
-
- PackagedP PackageManager::openAny(const String& name_, bool just_header) {
--  String name = cleanFilename(name_);
--  String filename = normalizeFilename(name);
-+  String name;
-+  String filename;
-+  if (wxFileName(name_).IsAbsolute()) {
-+    name  = name_;
-+    filename = normalize_filename(name_);
-+  } else {
-+    name = cleanFilename(name_);
-+    filename = normalizeFilename(name);
-+  }
-   // Is this package already loaded?
-   PackagedP& p = loaded_packages[filename];
-   if (!p) {
+@@ -100,18 +100,20 @@
+ 
+ void PackageManager::findMatching(const String& pattern, vector<PackagedP>& out) {
+   // first find local packages
+-  String file = local.findFirstMatching(pattern);
++  String dir = local.getDirectory();
++  String file = !dir.empty() ? wxFindFirstFile(dir + _("/") + pattern, 0) : String();
+   while (!file.empty()) {
+     if (local.checkForPackageFile(file)) {
+-      out.push_back(openAny(file, true));
++      out.push_back(openAny(wxFileName(file).GetFullName(), true));
+     }
+     file = wxFindNextFile();
+   }
+   // then global packages not already in the list
+-  file = global.findFirstMatching(pattern);
++  dir = global.getDirectory();
++  file = !dir.empty() ? wxFindFirstFile(dir + _("/") + pattern, 0) : String();
+   while (!file.empty()) {
+     if (global.checkForPackageFile(file)) {
+-      PackagedP p = openAny(file, true);
++      PackagedP p = openAny(wxFileName(file).GetFullName(), true);
+       if (find(out.begin(), out.end(), p) == out.end()) {
+         out.push_back(p);
+       }
