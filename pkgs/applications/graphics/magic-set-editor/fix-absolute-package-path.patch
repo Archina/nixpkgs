@@ -1,0 +1,22 @@
+diff --git a/src/util/io/package_manager.cpp b/src/util/io/package_manager.cpp
+index 66f3da2..3e5b2ac 100644
+--- a/src/util/io/package_manager.cpp
++++ b/src/util/io/package_manager.cpp
+@@ -71,8 +71,15 @@
+ }
+
+ PackagedP PackageManager::openAny(const String& name_, bool just_header) {
+-  String name = cleanFilename(name_);
+-  String filename = normalizeFilename(name);
++  String name;
++  String filename;
++  if (wxFileName(name_).IsAbsolute()) {
++    name  = name_;
++    filename = normalize_filename(name_);
++  } else {
++    name = cleanFilename(name_);
++    filename = normalizeFilename(name);
++  }
+   // Is this package already loaded?
+   PackagedP& p = loaded_packages[filename];
+   if (!p) {

@@ -55,6 +55,15 @@ stdenv.mkDerivation {
     hash = "sha256-WgLsU2WCV6n/bd/HZub4uB2+n0nixOBLzQWbMHL/kAM=";
   };
 
+  patches = [
+    ./fix-absolute-package-path.patch
+  ];
+  prePatch = ''
+    sed -i 's/\r$//' src/util/io/package_manager.cpp
+  '';
+  postPatch = "";
+
+
   nativeBuildInputs = [
     cmake
     pkg-config
