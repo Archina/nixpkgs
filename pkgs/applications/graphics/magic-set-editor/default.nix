@@ -89,10 +89,12 @@ stdenv.mkDerivation {
     runHook preInstall
     mkdir -p $out/bin
     cp magicseteditor $out/bin/
-    mkdir -p $out/share/mse
-    cp -r ../resource $out/share/mse/
+    mkdir -p $out/share/magicseteditor
+    cp -r ../resource $out/share/magicseteditor/
+    cp -r ../data $out/share/magicseteditor/
     runHook postInstall
   '';
+  enableParallelBuilding = true;
 
   meta = with lib; {
     description = "Magic Set Editor is a card design engine.";
