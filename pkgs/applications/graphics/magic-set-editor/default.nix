@@ -9,6 +9,7 @@
 , libGL
 , libGLU
 , curl
+, wrapGAppsHook3
 }:
 
 let
@@ -67,6 +68,7 @@ stdenv.mkDerivation {
   nativeBuildInputs = [
     cmake
     pkg-config
+    wrapGAppsHook3
   ];
 
   buildInputs = [
