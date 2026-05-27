@@ -10,9 +10,19 @@
 , libGLU
 , curl
 , wrapGAppsHook3
+, makeDesktopItem
+, copyDesktopItems
+, icoutils
 }:
 
 let
+  src = fetchFromGitHub {
+    owner = "G-e-n-e-v-e-n-s-i-S";
+    repo = "MagicSetEditor2";
+    rev = "main";
+    hash = "sha256-WgLsU2WCV6n/bd/HZub4uB2+n0nixOBLzQWbMHL/kAM=";
+  };
+
   wxGTK33-cmake = stdenv.mkDerivation rec {
     pname = "wxwidgets";
     version = "3.3.1";
@@ -43,6 +53,27 @@ let
 
     enableParallelBuilding = true;
   };
+
+  icon = stdenv.mkDerivation {
+    name = "magicseteditor-icon";
+    nativeBuildInputs = [ icoutils ];
+    phases = [ "installPhase" ];
+    installPhase = ''
+      mkdir -p $out/share/icons/hicolor/256x256/apps
+      icotool -x -o /tmp/app.png "${src}/resource/icon/app.ico" 2>/dev/null || true
+      cp /tmp/app.png $out/share/icons/hicolor/256x256/apps/magicseteditor.png 2>/dev/null || true
+    '';
+  };
+
+  desktopEntry = makeDesktopItem {
+    name = "magicseteditor";
+    desktopName = "Magic Set Editor 2";
+    comment = "A card design engine for your custom designs.";
+    exec = "magicseteditor %F";
+    icon = "magicseteditor";
+    categories = [ "Graphics" "Game" ];
+    type = "Application";
+  };
 in
 
 stdenv.mkDerivation {
@@ -69,6 +100,7 @@ stdenv.mkDerivation {
     cmake
     pkg-config
     wrapGAppsHook3
+    copyDesktopItems
   ];
 
   buildInputs = [
@@ -80,6 +112,8 @@ stdenv.mkDerivation {
     curl
     gtk3
   ];
+
+  desktopItems = [ desktopEntry ];
 
   preConfigure = ''
     export CMAKE_PREFIX_PATH=${wxGTK33-cmake}''${CMAKE_PREFIX_PATH:+:}$CMAKE_PREFIX_PATH
@@ -94,6 +128,8 @@ stdenv.mkDerivation {
     mkdir -p $out/share/magicseteditor
     cp -r ../resource $out/share/magicseteditor/
     cp -r ../data $out/share/magicseteditor/
+    mkdir -p $out/share/icons
+    cp -r ${icon}/share/icons/* $out/share/icons/
     runHook postInstall
   '';
   enableParallelBuilding = true;
